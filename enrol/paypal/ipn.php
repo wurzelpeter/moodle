@@ -93,7 +93,10 @@ $data->payment_gross    = $data->mc_gross;
 $data->payment_currency = $data->mc_currency;
 $data->timeupdated      = time();
 
-$user = $DB->get_record("user", array("id" => $data->userid), "*", MUST_EXIST);
+// NOTE: We currently receive IPNs for all kind of Paypal transactions.
+// If the user id has not been set in this IPN we simply ignore it
+// and do not generate an Error message. -> use IGNORE_MISSING
+$user = $DB->get_record("user", array("id" => $data->userid), "*", IGNORE_MISSING);
 $course = $DB->get_record("course", array("id" => $data->courseid), "*", MUST_EXIST);
 $context = context_course::instance($course->id, MUST_EXIST);
 
