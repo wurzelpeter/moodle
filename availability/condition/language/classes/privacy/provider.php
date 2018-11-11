@@ -15,17 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version info.
+ * Privacy main class.
  *
  * @package availability_language
  * @copyright 2018 Renaat Debleu (www.eWallah.net)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace availability_language\privacy;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2018090300;
-$plugin->requires  = 2017111302;
-$plugin->component = 'availability_language';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '3.4+';
+/**
+ * Privacy main class.
+ *
+ * @package availability_language
+ * @copyright 2018 Renaat Debleu (www.eWallah.net)
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements \core_privacy\local\metadata\null_provider {
+
+    /**
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
+     *
+     * @return  string
+     */
+    public static function get_reason() : string {
+        return 'privacy:metadata';
+    }
+}

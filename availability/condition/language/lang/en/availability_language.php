@@ -18,7 +18,7 @@
  * Language strings.
  *
  * @package availability_language
- * @copyright 2014 Renaat Debleu (www.eWallah.net)
+ * @copyright 2018 Renaat Debleu (www.eWallah.net)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,4 +27,5 @@ $string['getdescription'] = 'The student\'s language is {$a}';
 $string['getdescriptionnot'] = 'The student\'s language is not {$a}';
 $string['missing'] = 'You must select a language.';
 $string['pluginname'] = 'Restriction by language';
+$string['privacy:metadata'] = 'The availability_language plugin does not store any personal data.';
 $string['title'] = 'Language';

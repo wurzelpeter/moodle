@@ -33,13 +33,14 @@ use availability_language\condition;
  * @copyright 2017 eWallah.net (info@eWallah.net)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class availability_language_condition_testcase extends advanced_testcase {
+class availability_language_testcase extends advanced_testcase {
     /**
      * Load required classes.
      */
     public function setUp() {
         // Load the mock info class so that it can be used.
         global $CFG;
+        require_once($CFG->dirroot . '/availability/tests/fixtures/mock_condition.php');
         require_once($CFG->dirroot . '/availability/tests/fixtures/mock_info.php');
     }
 
@@ -123,9 +124,89 @@ class availability_language_condition_testcase extends advanced_testcase {
     public function test_get_description() {
         $info = new \core_availability\mock_info();
         $language = new condition((object)['type' => 'language', 'id' => 'en']);
-        $information = $language->get_description(true, false, $info);
-        $information = $language->get_description(true, true, $info);
-        $information = $language->get_standalone_description(true, false, $info);
-        $information = $language->get_standalone_description(true, true, $info);
+        $desc = $language->get_description(true, false, $info);
+        $this->assertEquals($desc, 'The student\'s language is English ‎(en)‎');
+        $desc = $language->get_description(true, true, $info);
+        $this->assertEquals($desc, 'The student\'s language is not English ‎(en)‎');
+        $this->assertContains('language is English', $language->get_standalone_description(false, false, $info));
+        $this->assertContains('language is not English', $language->get_standalone_description(false, true, $info));
+    }
+
+    /**
+     * Tests using language condition in front end.
+     */
+    public function test_frontend() {
+        global $CFG, $DB, $PAGE, $SESSION, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $CFG->enableavailability = true;
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $user = $generator->create_user();
+        $generator->enrol_user($user->id, $course->id);
+        $page = $generator->get_plugin_generator('mod_page')->create_instance(['course' => $course]);
+        $modinfo = get_fast_modinfo($course);
+        $cm = $modinfo->get_cm($page->cmid);
+        $PAGE->set_url('/course/modedit.php', ['update' => $page->cmid]);
+        \core_availability\frontend::include_all_javascript($course, $cm);
+        $this->setuser($user);
+        $info = new \core_availability\info_module($cm);
+        $cond = new condition((object)['type' => 'language', 'id' => 'en']);
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(false, $info, false, $user->id));
+        $this->assertFalse($cond->is_available(true, $info, false, $user->id));
+        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
+        // Change language.
+        $SESSION->lang = 'fr';
+        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(false, $info, false, $user->id));
+        $PAGE->set_url('/course/view.php', ['id' => $course->id]);
+        $this->setAdminUser();
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(false, $info, false, $user->id));
+        $this->assertTrue($cond->is_available(false, $info, true, $USER->id));
+        $this->assertTrue($cond->is_available(false, $info, false, $USER->id));
+        // No language.
+        $cond = new condition((object)['type' => 'language', 'id' => '']);
+        $this->assertTrue($cond->is_available(false, $info, false, $USER->id));
+        // No id.
+        $cond = new condition((object)['type' => 'language']);
+        $this->assertTrue($cond->is_available(false, $info, false, $USER->id));
+        $this->assertFalse($cond->is_available_for_all());
+        $this->assertFalse($cond->update_dependency_id(null, 1, 2));
+        $this->assertEquals($cond->__toString(), '{language:any}');
+        $this->assertEquals($cond->get_standalone_description(true, true, $info), 'Not available unless: ');
+
+        $course = $generator->create_course(['lang' => 'FR']);
+        $page = $generator->get_plugin_generator('mod_page')->create_instance(['course' => $course]);
+        $modinfo = get_fast_modinfo($course);
+        $cm = $modinfo->get_cm($page->cmid);
+        $PAGE->set_url('/course/modedit.php', ['update' => $page->cmid]);
+        \core_availability\frontend::include_all_javascript($course, $cm);
+
+        $this->setAdminUser();
+        $DB->set_field('user', 'lang', '', ['id' => $user->id]);
+        $cond = new condition((object)['type' => 'language', 'id' => '']);
+        $this->assertTrue($cond->is_available(false, $info, false, $user->id));
+    }
+
+    /**
+     * Tests using language condition in front end.
+     */
+    public function test_other() {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $CFG->enableavailability = true;
+        $condition = \availability_language\condition::get_json('fr');
+        $this->assertEquals($condition, (object)['type' => 'language', 'id' => 'fr']);
+    }
+
+    /**
+     * Test privacy.
+     */
+    public function test_privacy() {
+        $privacy = new availability_language\privacy\provider();
+        $this->assertEquals($privacy->get_reason(), 'privacy:metadata');
     }
 }
